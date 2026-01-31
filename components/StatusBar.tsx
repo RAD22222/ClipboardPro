@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useConnection } from '../context/ConnectionContext';
-import { Share2, Link as LinkIcon, QrCode, Settings, ShieldCheck, Wifi, WifiOff, Trash2 } from 'lucide-react';
+import { Share2, Link as LinkIcon, Settings, ShieldCheck, Trash2 } from 'lucide-react';
 import SettingsModal from './SettingsModal';
 
 const StatusBar: React.FC = () => {
@@ -14,6 +14,25 @@ const StatusBar: React.FC = () => {
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareApp = async () => {
+    const shareData = {
+      title: 'ClipboardPro',
+      text: 'Connect to my clipboard to share files instantly!',
+      url: `${window.location.origin}${window.location.pathname}`
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Share failed', err);
+      }
+    } else {
+      navigator.clipboard.writeText(shareData.url);
+      alert('URL copied to clipboard! Open it on your other device.');
+    }
   };
 
   return (
@@ -34,6 +53,14 @@ const StatusBar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2">
+        <button 
+          onClick={shareApp}
+          className="p-2.5 rounded-xl glass hover:bg-white/10 text-slate-200 transition-all hidden sm:flex"
+          title="Open on another device"
+        >
+          <Share2 size={20} />
+        </button>
+
         {isConnected && (
           <button 
             onClick={clearHistory}
