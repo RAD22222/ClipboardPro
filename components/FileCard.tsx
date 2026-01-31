@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useConnection } from '../context/ConnectionContext';
+import { useConnection } from '../context/ConnectionContext.tsx';
 import { File, Download, X, Image as ImageIcon, Video, Music, Loader2, Check } from 'lucide-react';
 
 const FileCard: React.FC<{ item: any }> = ({ item }) => {

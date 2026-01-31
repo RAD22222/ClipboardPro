@@ -1,9 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import Peer, { DataConnection } from 'peerjs';
-import { ClipboardItem, DataMessage, MessageType, FileMetadata, FileChunk } from '../types';
-import { splitFileIntoChunks, assembleChunks } from '../utils/chunkHelpers';
-import { clipboardService } from '../services/ClipboardService';
+import { ClipboardItem, DataMessage, MessageType, FileMetadata, FileChunk } from '../types.ts';
+import { splitFileIntoChunks, assembleChunks } from '../utils/chunkHelpers.ts';
+import { clipboardService } from '../services/ClipboardService.ts';
 
 const PEER_ID_KEY = 'clipboard_pro_peer_id';
 const PIN_PREFIX = 'cbp-pin-';
@@ -37,6 +37,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [items, setItems] = useState<ClipboardItem[]>([]);
   
   const peerRef = useRef<Peer | null>(null);
+  const activeConnRef = useRef<DataConnection | null>(null);
   const discoveryPeerRef = useRef<Peer | null>(null);
   const connectionTimeoutRef = useRef<number | null>(null);
   const pingIntervalRef = useRef<number | null>(null);
@@ -55,10 +56,12 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     conn.on('open', () => {
       if (connectionTimeoutRef.current) window.clearTimeout(connectionTimeoutRef.current);
+      console.log('Connection established with:', conn.peer);
       setIsConnected(true);
       setIsConnecting(false);
       setDiscoveryPin(null);
       setIsBroadcasting(false);
+      activeConnRef.current = conn;
       
       if (discoveryPeerRef.current) {
         discoveryPeerRef.current.destroy();
@@ -75,27 +78,33 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (data?.type === MessageType.PING) return;
       if (data?.type === 'HANDSHAKE') {
         const remotePersistentId = data.payload;
-        console.log("Discovery handshake complete with:", remotePersistentId);
+        console.log("Discovery handshake received persistent ID:", remotePersistentId);
         return;
       }
       handleIncomingData(data);
     });
 
     const cleanup = () => {
+      console.log('Cleaning up connection');
       setIsConnected(false);
       setIsConnecting(false);
+      activeConnRef.current = null;
       if (connectionTimeoutRef.current) window.clearTimeout(connectionTimeoutRef.current);
       if (pingIntervalRef.current) window.clearInterval(pingIntervalRef.current);
     };
 
     conn.on('close', cleanup);
-    conn.on('error', cleanup);
+    conn.on('error', (err) => {
+      console.error('Connection error:', err);
+      cleanup();
+    });
   }, [isConnected]);
 
   useEffect(() => {
     clipboardService.getAllItems().then(setItems);
 
     const initPeer = () => {
+      if (peerRef.current) return;
       const savedId = localStorage.getItem(PEER_ID_KEY);
       const peer = new Peer(savedId || undefined, {
         config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] },
@@ -119,7 +128,10 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     initPeer();
-    return () => peerRef.current?.destroy();
+    return () => {
+      peerRef.current?.destroy();
+      peerRef.current = null;
+    };
   }, [setupConnection]);
 
   const handleIncomingData = useCallback(async (data: DataMessage) => {
@@ -239,9 +251,13 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [stopBroadcasting]);
 
   const sendText = useCallback((text: string) => {
-    const conn = peerRef.current?.connections[Object.keys(peerRef.current?.connections)[0]]?.[0];
-    if (conn && isConnected) {
-      conn.send({ type: MessageType.TEXT, payload: text, senderId: peerId, timestamp: Date.now() });
+    if (activeConnRef.current && isConnected) {
+      activeConnRef.current.send({ 
+        type: MessageType.TEXT, 
+        payload: text, 
+        senderId: peerId, 
+        timestamp: Date.now() 
+      });
       const newItem: ClipboardItem = { id: crypto.randomUUID(), type: 'TEXT', content: text, status: 'completed', timestamp: Date.now(), isIncoming: false };
       setItems(prev => [newItem, ...prev]);
       clipboardService.saveItem(newItem);
@@ -259,16 +275,15 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   const sendFiles = useCallback(async (files: FileList | File[]) => {
-    const conn = peerRef.current?.connections[Object.keys(peerRef.current?.connections)[0]]?.[0];
-    if (!conn || !isConnected) return;
+    if (!activeConnRef.current || !isConnected) return;
     for (const file of Array.from(files)) {
       const metaId = crypto.randomUUID();
       const metaItem: ClipboardItem = { id: metaId, type: 'FILE', fileMeta: { id: metaId, name: file.name, size: file.size, mimeType: file.type || 'application/octet-stream', chunkCount: 0 }, status: 'pending', progress: 0, timestamp: Date.now(), isIncoming: false, blob: file };
       setItems(prev => [metaItem, ...prev]);
       const metadata = await splitFileIntoChunks(file, (chunk) => {
-        conn.send({ type: MessageType.FILE_CHUNK, payload: { ...chunk, id: metaId }, senderId: peerId, timestamp: Date.now() });
+        activeConnRef.current?.send({ type: MessageType.FILE_CHUNK, payload: { ...chunk, id: metaId }, senderId: peerId, timestamp: Date.now() });
       });
-      conn.send({ type: MessageType.FILE_META, payload: { ...metadata, id: metaId }, senderId: peerId, timestamp: Date.now() });
+      activeConnRef.current?.send({ type: MessageType.FILE_META, payload: { ...metadata, id: metaId }, senderId: peerId, timestamp: Date.now() });
       setItems(prev => prev.map(item => item.id === metaId ? { ...item, status: 'completed', progress: 100, fileMeta: { ...metadata, id: metaId } } : item));
       clipboardService.saveItem({ ...metaItem, status: 'completed', progress: 100, fileMeta: { ...metadata, id: metaId } });
     }

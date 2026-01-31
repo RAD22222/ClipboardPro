@@ -1,8 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { useConnection } from '../context/ConnectionContext';
+import { useConnection } from '../context/ConnectionContext.tsx';
 import { Send, Plus, FileText, Image as ImageIcon, Video, Music, File, Download, X, Copy, Check, UploadCloud } from 'lucide-react';
-import FileCard from './FileCard';
+import FileCard from './FileCard.tsx';
 
 const ClipboardPage: React.FC = () => {
   const { items, sendText, sendFiles } = useConnection();

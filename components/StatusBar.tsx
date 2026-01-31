@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { useConnection } from '../context/ConnectionContext';
+import { useConnection } from '../context/ConnectionContext.tsx';
 import { Share2, Link as LinkIcon, Settings, ShieldCheck, Trash2 } from 'lucide-react';
-import SettingsModal from './SettingsModal';
+import SettingsModal from './SettingsModal.tsx';
 
 const StatusBar: React.FC = () => {
   const { peerId, isConnected, clearHistory } = useConnection();

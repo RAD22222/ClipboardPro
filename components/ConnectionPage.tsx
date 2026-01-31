@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useConnection } from '../context/ConnectionContext';
+import { useConnection } from '../context/ConnectionContext.tsx';
 import { QRCodeSVG } from 'qrcode.react';
 import { Copy, Scan, Laptop, Smartphone, ArrowRight, Zap, ShieldCheck, Wifi, Loader2, X, Check, Radio } from 'lucide-react';
 
