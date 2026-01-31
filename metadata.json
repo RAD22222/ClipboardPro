@@ -1,0 +1,7 @@
+{
+  "name": "ClipboardPro",
+  "description": "A production-ready universal clipboard for real-time, peer-to-peer sharing of text and files between devices with zero cloud storage.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

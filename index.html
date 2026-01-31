@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClipboardPro | Universal P2P Clipboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px border rgba(255, 255, 255, 0.1);
+        }
+        .gradient-bg {
+            background: radial-gradient(circle at top left, #1e1b4b, #020617),
+                        radial-gradient(circle at bottom right, #312e81, #020617);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "qrcode.react": "https://esm.sh/qrcode.react@^4.2.0",
+    "peerjs": "https://esm.sh/peerjs@^1.5.5"
+  }
+}
+</script>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div id="root"></div>
+</body>
+</html>
